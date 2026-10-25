@@ -29,7 +29,7 @@ export function bend(track,s){const a=sample(track,s).angle,b=sample(track,s+65)
 export function createRace(track,mode='race',assist=true){
  const colors=['#ff653e','#f8ce63','#e7ede0','#65cbcc','#d28ec8','#8cb4ee'];
  const names=['YOU','SOL','KIT','RIO','LUX','ACE'];
- const cars=Array.from({length:mode==='trial'?1:6},(_,i)=>({name:names[i],color:colors[i],s:i===0?0:115+i*40,lane:i===0?0:(i%2?22:-22),speed:0,tires:1,boost:1,lap:1,finished:false,finishTime:null,pit:0,pitQueued:false,bestLap:Infinity,lastLap:0}));
+ const cars=Array.from({length:mode==='trial'?1:6},(_,i)=>({name:names[i],color:colors[i],s:i===0?0:115+i*40,lane:i===0?0:(i%2?22:-22),speed:0,tires:1,boost:1,lap:1,finished:false,finishTime:null,pit:0,pitQueued:false,bestLap:Infinity,bestFlyingLap:Infinity,lastLap:0}));
  return {track,mode,assist,cars,time:0,laps:mode==='trial'?3:5,done:false,events:[],slip:false};
 }
 export function step(r,input,dt){
@@ -68,7 +68,7 @@ export function step(r,input,dt){
   c.tires=Math.max(.15,c.tires-dt*(.0025+corner*c.speed*.002));
   const prev=c.s;c.s+=c.speed*dt;
   const lap=Math.floor(c.s/r.track.length)+1;
-  if(lap>c.lap){c.bestLap=Math.min(c.bestLap,r.time-c.lastLap);c.lastLap=r.time;c.lap=lap;if(i===0)r.events.push('Lap '+Math.min(lap,r.laps)+' · keep pushing');}
+  if(lap>c.lap){const lapTime=r.time-c.lastLap;c.bestLap=Math.min(c.bestLap,lapTime);if(c.lap>=2)c.bestFlyingLap=Math.min(c.bestFlyingLap,lapTime);c.lastLap=r.time;c.lap=lap;if(i===0)r.events.push('Lap '+Math.min(lap,r.laps)+' · keep pushing');}
   if(c.s>=r.track.length*r.laps){c.finished=true;c.finishTime=r.time;if(i===0){r.done=true;r.events.push('Checkered flag');}}
   if(!c.finished&&c.pitQueued&&Math.floor(prev/r.track.length)!==Math.floor(c.s/r.track.length)){c.pitQueued=false;c.pit=3.5;if(i===0)r.events.push('Box, box · 3.5 seconds');}
  }

@@ -1,6 +1,7 @@
-// AIWANNA cloud saves: personal bests (and time-trial ghosts while they fit) for each circuit, mode and assist setting.
+// AIWANNA cloud saves: personal bests (and time-trial ghosts while they fit) for each circuit, mode and assist setting,
+// plus the best flying lap per circuit (lap-0..2) that feeds the Triple Crown board.
 export const cloudConfig={platformOrigin:'https://www.aiwanna.games',gameId:'82851460-cb8e-4a38-bb19-284e81fb5e66',schemaVersion:1,gameVersion:'1.0.0'};
-const KEY=/^[0-2]-(race|trial)-(on|off)$/,BUDGET=200000;
+const KEY=/^([0-2]-(race|trial)-(on|off)|lap-[0-2])$/,BUDGET=200000;
 const validGhost=g=>Array.isArray(g)&&g.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isSafeInteger));
 // Keep only well-formed records so an imported snapshot can never break the menu or a race.
 export function cleanRecords(data){
@@ -15,6 +16,6 @@ export function exportRecords(records){
  return {records:out};
 }
 export function summarize(data){
- const n=Object.keys(cleanRecords(data?.records)).length;
+ const n=Object.keys(cleanRecords(data?.records)).filter(k=>!k.startsWith('lap-')).length;
  return n?`${n} personal best${n===1?'':'s'}`:'No personal bests yet';
 }

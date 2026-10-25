@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {TrialLeaderboard,rankedScore} from '../src/leaderboard.js';
-import {boardDefinitions,boardKey} from '../src/leaderboard-config.js';
+import {TrialLeaderboard,requestPlayerSession,recordLap,tripleCrownScore} from '../src/leaderboard.js';
+import {boardDefinition,leaderboardConfig,TRIPLE_CROWN} from '../src/leaderboard-config.js';
 import {TRACKS,createTrack,createRace,step} from '../src/engine.js';
-const config={origin:'https://example.test',gameId:'test-game',gameSlug:'test-game',boards:{trial:'test-board'}};
+const config={origin:'https://example.test',origins:['https://example.test'],gameId:'test-game',gameSlug:'test-game',boards:{trial:'test-board'}};
 const session=()=>({gameId:'test-game',token:'test-only',expiresAt:new Date(Date.now()+3600000).toISOString(),player:{id:'test-player',displayName:'Test',isGuest:false}});
-test('six independent boards use lower-is-better millisecond bests',()=>{assert.equal(boardDefinitions.length,6);assert.equal(new Set(boardDefinitions.map(x=>x.key)).size,6);assert.notEqual(boardKey(0,true),boardKey(0,false));assert.ok(boardDefinitions.every(x=>x.sortDirection==='asc'&&x.unit==='ms'&&x.aggregation==='best'));});
-test('only completed three-lap solo trials produce a valid score',()=>{const r=createRace(createTrack(TRACKS[0]),'trial');assert.throws(()=>rankedScore(r));for(let i=0;i<12000&&!r.done;i++)step(r,{},1/60);assert.equal(rankedScore(r),Math.round(r.time*1000));r.mode='race';assert.throws(()=>rankedScore(r));});
+test('one Triple Crown board: lower-is-better milliseconds, wired to a real board id',()=>{assert.equal(boardDefinition.key,TRIPLE_CROWN);assert.equal(boardDefinition.order,'asc');assert.equal(boardDefinition.unit,'milliseconds');assert.ok(leaderboardConfig.boards[TRIPLE_CROWN]);assert.ok(leaderboardConfig.origins.includes('https://aiwanna.games'));});
+test('Triple Crown sums best flying laps only once all three circuits have one',()=>{const records={};assert.equal(tripleCrownScore(records),null);assert.ok(recordLap(records,0,18.2));assert.ok(recordLap(records,1,19.05));assert.equal(tripleCrownScore(records),null);assert.ok(recordLap(records,2,17.5));assert.equal(tripleCrownScore(records),18200+19050+17500);assert.equal(recordLap(records,0,18.9),false);assert.equal(recordLap(records,0,Infinity),false);assert.ok(recordLap(records,0,17.9));assert.equal(tripleCrownScore(records),17900+19050+17500);});
+test('flying laps exclude the standing-start first lap',()=>{const r=createRace(createTrack(TRACKS[0]),'trial');for(let i=0;i<12000&&!r.done;i++)step(r,{},1/60);const c=r.cars[0];assert.ok(Number.isFinite(c.bestFlyingLap));assert.ok(c.bestFlyingLap>=c.bestLap);assert.ok(c.bestFlyingLap<r.time/2);});
+test('session handshake accepts any official origin and uses it for the API',async()=>{const listeners=[],sent=[];const parent={postMessage:(m,o)=>sent.push([m,o])};const win={parent,setTimeout,clearTimeout,addEventListener:(t,f)=>listeners.push(f),removeEventListener:()=>{}};
+ const cfg={...config,origins:['https://www.aiwanna.games','https://aiwanna.games'],gameId:'g'};const p=requestPlayerSession(cfg,win);assert.deepEqual(sent.map(x=>x[1]),cfg.origins);
+ const requestId=sent[0][0].requestId;listeners[0]({source:parent,origin:'https://aiwanna.games',data:{source:'aimadegames-platform',type:'leaderboard-session',requestId,apiOrigin:'https://aiwanna.games',session:{token:'t',gameId:'g',player:{displayName:'P'}}}});
+ assert.equal((await p).apiOrigin,'https://aiwanna.games');});
 test('unconfigured boards never make a network call',()=>{const b=new TrialLeaderboard({boards:{}},{fetcher:()=>{throw Error('network called');}});assert.equal(b.begin('trial'),null);assert.equal(b.url('trial'),null);});
 test('failed settlement retry preserves run, final score and idempotency key',async()=>{
  const calls=[];let failures=1;const b=new TrialLeaderboard(config,{sessionProvider:async()=>session(),fetcher:async(url,options)=>{calls.push({url,...options});if(url.endsWith('/runs'))return {ok:true,json:async()=>({runId:'run-1'})};if(failures--)throw Error('offline');return {ok:true,json:async()=>({accepted:true})};}});

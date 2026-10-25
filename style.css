@@ -12,3 +12,9 @@
 /* Keep the start button on the first screen of shorter laptop and embedded-player viewports */
 @media(min-width:601px) and (max-height:820px){.menu{padding:22px 0}#preview{height:210px}.circuit-info{margin:12px 0 8px}.setup{margin:12px 0}.controls-note{margin-top:10px}.intro h1{font-size:clamp(50px,5.6vw,84px);margin:18px 0}.menu-bottom{margin-top:30px}}
 @media(min-width:601px) and (max-height:690px){header{height:66px}.menu{padding:14px 0}#preview{height:160px}.card-top{margin-bottom:8px}.circuit-info h2{font-size:24px}.primary{padding:15px 20px}.controls-note{display:none}}
+
+/* Triple Crown rankings panel */
+#ranking-list.crown-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0 10px;font:inherit}#ranking-list .crown-card{display:block;border:0;background:#eef3f8;border-radius:10px;padding:12px 10px;box-shadow:inset 0 -4px 0 #0000000d}.crown-card span{display:block;min-height:24px;line-height:1.2;font:10px monospace;letter-spacing:1px;color:#6e8395;margin-bottom:6px}.crown-card b{font-size:20px;color:#15334d}.crown-card.empty b{color:#a9b8c6}
+.crown-total{display:flex;justify-content:space-between;align-items:center;background:#15334d;color:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 4px 0 #09213b}.crown-total span{font:10px monospace;letter-spacing:1.5px;color:#ffd44a}.crown-total b{font-size:28px}
+.crown-link{display:block;text-align:center;margin:4px 0 6px;font:bold 12px Arial;letter-spacing:1px;color:#ef643e;text-decoration:none}.crown-link:hover{text-decoration:underline}
+@media(max-width:600px){.crown-card b{font-size:16px}.crown-total b{font-size:22px}}

@@ -14,15 +14,11 @@ The race pauses when its window loses focus or becomes hidden. Local bests and t
 
 ## AIWANNA integration
 
-Published at https://www.aiwanna.games/games/b3f91cd4cc13ec1f947ac2f809f1ae2a-2c49ebfa. The six time-trial boards are live and their real IDs are in `src/leaderboard-config.js`; a run from the AIWANNA player was accepted and ranked. Opened outside AIWANNA, the game skips online ranking and keeps times on the device.
+Published at https://www.aiwanna.games/games/b3f91cd4cc13ec1f947ac2f809f1ae2a-2c49ebfa.
 
-Cloud saves are enabled (schema version 1). `src/cloud-save.js` exports personal bests for every circuit, mode and assist setting, plus time-trial ghosts while the snapshot stays under the size limit (the longest ghosts are dropped first). The SDK loads progress before the first race; standalone play stays local-only.
+**Leaderboard: one board, the Triple Crown.** Score = your best *flying* lap (lap 2 onward, so no standing start) on each of the three circuits, summed in integer milliseconds; lower wins. Laps from Grand Prix and time trial both count, with or without corner assist. You enter once all three circuits have a flying lap; any later race that improves a circuit's best lap submits the new total. A platform run starts at every race start and is settled at the finish only when the total improved. The handshake asks every official AIWANNA domain (www.aiwanna.games, aiwanna.games, ai-made.games, 1gp-game-platform.vercel.app) and talks to whichever one answers. Opened outside AIWANNA, the game keeps laps on the device and skips ranking. The six earlier per-circuit trial boards are disabled. Scores are client-reported casual competition, not cheat-resistant.
 
-Only completed three-lap solo time trials rank. Each circuit has assisted and unassisted boards. Integer milliseconds, ascending, personal best only, equal times share rank. All players get identical car, boost and tire settings; there are no AI opponents or drafting in trials. Paused time is excluded. Accepted range: 30 seconds to 10 minutes. Minimum platform run age: 30 seconds. Scores are client-reported casual competition, not cheat-resistant.
-
-The Rankings panel shows local records and, when configured, links to the selected real online board. The game starts a platform run at trial start and submits only after completion, validates the exact parent origin and game ID, and retains credentials only in memory. Start and settlement use separate idempotency keys. Retry preserves the run and final score; failed submissions never prevent local play. Automated tests cover eligibility, six-board separation, disabled configuration, retry idempotency, and wrong-game sessions. Physical-phone testing remains outstanding.
-
-All artwork uses original procedural Three.js geometry and a locally generated road texture. Original fictional teams and tracks; no F1 or LEGO branding or licensed assets. Code and artwork created with Codex.
+**Cloud saves** are enabled (schema version 1). `src/cloud-save.js` exports personal bests for every circuit, mode and assist setting, the best flying lap per circuit, and time-trial ghosts while the snapshot stays under the size limit (the longest ghosts are dropped first). The SDK loads progress before the first race; standalone play stays local-only.
 
 ## AIWANNA listing
 
