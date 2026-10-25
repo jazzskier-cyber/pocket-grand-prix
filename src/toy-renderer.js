@@ -35,19 +35,20 @@ function makeCar(color){
 }
 
 // The living room around the baseplate: wooden floor, rug, sofa, shelf, lamp, window and spare bricks.
-function buildRoom(){
+function buildRoom(anisotropy){
  const group=new THREE.Group(),cx=45,cz=27.5,floorY=-1.25;
- const wood=canvasTexture(512,512,(c,w,h)=>{const tones=['#b98552','#a8743f','#c79563','#9e6b3a'];for(let i=0;i<8;i++){c.fillStyle=tones[i%4];c.fillRect(0,i*h/8,w,h/8);c.fillStyle='rgba(60,35,15,.35)';c.fillRect(0,i*h/8,w,2);c.fillRect(((i*173)%w),i*h/8,2,h/8);for(let k=0;k<14;k++){c.fillStyle='rgba(90,55,25,.12)';c.fillRect(0,i*h/8+((k*37+i*11)%(h/8)),w,1);}}},[12,12]);
- const floor=new THREE.Mesh(new THREE.PlaneGeometry(700,700),new THREE.MeshStandardMaterial({map:wood,color:0xb8a898,roughness:.7}));floor.rotation.x=-Math.PI/2;floor.position.set(cx,floorY-.02,cz);floor.receiveShadow=true;group.add(floor);
- const rug=canvasTexture(1024,740,(c,w,h)=>{c.fillStyle='#b4553f';c.fillRect(0,0,w,h);c.strokeStyle='#e9cfa3';c.lineWidth=18;c.strokeRect(30,30,w-60,h-60);c.strokeStyle='#2f5d73';c.lineWidth=8;c.strokeRect(62,62,w-124,h-124);});
- const rugMesh=new THREE.Mesh(new THREE.PlaneGeometry(150,108),new THREE.MeshStandardMaterial({map:rug,color:0xd8d0c8,roughness:1}));rugMesh.rotation.x=-Math.PI/2;rugMesh.position.set(cx,floorY,cz);rugMesh.receiveShadow=true;group.add(rugMesh);
+ // Low-contrast planks with soft seams so the floor stays calm at grazing angles instead of shimmering.
+ const wood=canvasTexture(512,512,(c,w,h)=>{const tones=['#b98a5c','#b3845a','#bd8f61','#b0825a'];for(let i=0;i<4;i++){c.fillStyle=tones[i];c.fillRect(0,i*h/4,w,h/4);c.fillStyle='rgba(70,40,20,.14)';c.fillRect(0,i*h/4,w,6);c.fillRect(((i*211)%w),i*h/4,6,h/4);}},[6,6]);
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(700,700),new THREE.MeshStandardMaterial({map:wood,color:0xb8a898,roughness:.7}));floor.rotation.x=-Math.PI/2;wood.anisotropy=anisotropy;floor.position.set(cx,floorY-.15,cz);floor.receiveShadow=true;group.add(floor);
+ const rug=canvasTexture(1024,1024,(c,w,h)=>{c.fillStyle='#b4553f';c.fillRect(0,0,w,h);c.strokeStyle='#e9cfa3';c.lineWidth=34;c.strokeRect(36,36,w-72,h-72);c.strokeStyle='#2f5d73';c.lineWidth=18;c.strokeRect(86,86,w-172,h-172);});
+ const rugMesh=new THREE.Mesh(new THREE.PlaneGeometry(150,108),new THREE.MeshStandardMaterial({map:rug,color:0xd8d0c8,roughness:1}));rugMesh.rotation.x=-Math.PI/2;rug.anisotropy=anisotropy;rugMesh.position.set(cx,floorY-.04,cz);rugMesh.receiveShadow=true;group.add(rugMesh);
  const walls=new THREE.MeshStandardMaterial({color:0xeedcc2,roughness:.95,side:THREE.BackSide});
- const room=new THREE.Mesh(new THREE.BoxGeometry(420,190,340),walls);room.position.set(cx,floorY+95,cz);group.add(room);
- const trim=(x,z,w,d)=>{const m=box(group,x,floorY+3,z,w,6,d,0xfaf3e6,false);m.receiveShadow=false;};trim(cx,cz-169,420,1.5);trim(cx,cz+169,420,1.5);trim(cx-209,cz,1.5,340);trim(cx+209,cz,1.5,340);
+ const room=new THREE.Mesh(new THREE.BoxGeometry(420,200,340),walls);room.position.set(cx,floorY+98,cz);   // bottom face sits below the wooden floorgroup.add(room);
+ const trim=(x,z,w,d)=>{const m=box(group,x,floorY+3,z,w,6,d,0xfaf3e6,false);m.receiveShadow=false;};trim(cx,cz-168,418,1.5);trim(cx,cz+168,418,1.5);trim(cx-208,cz,1.5,338);trim(cx+208,cz,1.5,338);
  // Sofa along the back wall, under the window.
  const sofa=new THREE.Group();sofa.position.set(cx,floorY,cz-150);group.add(sofa);
  box(sofa,0,9,0,150,18,46,0x5f82a8);box(sofa,0,30,-19,150,30,12,0x5f82a8);for(const x of [-70,70])box(sofa,x,20,0,12,22,46,0x45648a);for(const x of [-34,34])box(sofa,x,21,3,64,7,38,0x6a8fb5);box(sofa,-48,30,-9,22,20,8,0xf2b94b);box(sofa,52,29,-9,20,18,8,0xe9ecef);
- const pane=box(group,cx,floorY+105,cz-169,96,62,1,0xffffff,false);const frameColor=0xfaf3e6;box(group,cx,floorY+105,cz-168.4,100,4,1.5,frameColor,false);box(group,cx,floorY+137,cz-168.4,100,4,1.5,frameColor,false);box(group,cx,floorY+73,cz-168.4,100,4,1.5,frameColor,false);box(group,cx,floorY+105,cz-168.4,4,66,1.5,frameColor,false);for(const x of [-50,50])box(group,cx+x,floorY+105,cz-168.4,4,66,1.5,frameColor,false);
+ const pane=box(group,cx,floorY+105,cz-168.6,96,62,.5,0xffffff,false);const frameColor=0xfaf3e6;box(group,cx,floorY+105,cz-168.4,100,4,1.5,frameColor,false);box(group,cx,floorY+137,cz-168.4,100,4,1.5,frameColor,false);box(group,cx,floorY+73,cz-168.4,100,4,1.5,frameColor,false);box(group,cx,floorY+105,cz-168.4,4,66,1.5,frameColor,false);for(const x of [-50,50])box(group,cx+x,floorY+105,cz-168.4,4,66,1.5,frameColor,false);
  const dayPane=new THREE.MeshBasicMaterial({map:canvasTexture(256,170,(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#bfe6f7');g.addColorStop(1,'#eaf7fb');c.fillStyle=g;c.fillRect(0,0,w,h);c.fillStyle='#8fbf7a';c.fillRect(0,h*.78,w,h*.22);})});
  const nightPane=new THREE.MeshBasicMaterial({map:canvasTexture(256,170,(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#0c1430');g.addColorStop(1,'#25335e');c.fillStyle=g;c.fillRect(0,0,w,h);c.fillStyle='#fff';for(let i=0;i<40;i++)c.fillRect((i*53)%w,(i*29)%(h*.7),1.5,1.5);c.fillStyle='#fff6d8';c.beginPath();c.arc(w*.72,h*.3,18,0,7);c.fill();c.fillStyle='#0c1430';c.beginPath();c.arc(w*.72+8,h*.27,15,0,7);c.fill();c.fillStyle='#16203f';c.fillRect(0,h*.8,w,h*.2);})});
  // Bookshelf with colorful spines on the left wall.
@@ -58,6 +59,8 @@ function buildRoom(){
  // A few oversized spare bricks and a toy box on the rug edge.
  brick(group,cx-58,floorY,cz-38,8,4.8,4,palette.blue);brick(group,cx-50,floorY,cz-44,4,4.8,4,palette.yellow);brick(group,cx+60,floorY,cz+40,8,4.8,4,palette.orange);brick(group,cx+66,floorY,cz-30,4,9.6,4,palette.teal);brick(group,cx-62,floorY,cz+42,4,4.8,8,palette.white);
  box(group,cx+118,floorY+16,cz+70,40,32,32,0xf2b94b);box(group,cx+118,floorY+33,cz+70,42,3,34,0xe39d2b);
+ // Furniture lies outside the sun's shadow box; letting it cast or receive shadows only produces stripes.
+ group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=o===floor||o===rugMesh;}});
  return {group,walls,lamp,shade,pane,dayPane,nightPane};
 }
 
@@ -69,10 +72,10 @@ export class ToyRenderer{
   this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
   this.renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.25;
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x9fd8e9);this.scene.fog=new THREE.Fog(0x9fd8e9,90,180);
-  this.camera=new THREE.PerspectiveCamera(preview?43:53,1,.1,600);
+  this.camera=new THREE.PerspectiveCamera(preview?43:53,1,.3,520);
   this.hemi=new THREE.HemisphereLight(0xfff4e2,0x8a6a4a,2.3);this.scene.add(this.hemi);
   this.sun=new THREE.DirectionalLight(0xfff0d2,3.3);this.sun.position.set(30,65,10);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-65,right:65,top:65,bottom:-65,near:1,far:150});this.sun.shadow.normalBias=.04;this.sun.target.position.set(45,0,25);this.scene.add(this.sun,this.sun.target);
-  this.room=buildRoom();this.scene.add(this.room.group);
+  this.room=buildRoom(this.renderer.capabilities.getMaxAnisotropy());this.scene.add(this.room.group);
   this.content=new THREE.Group();this.scene.add(this.content);this.cars=[];this.shake=0;
   // Pooled particles for sparks, grass/sand spray and slipstream streaks.
   this.particles=Array.from({length:140},()=>{const m=new THREE.Mesh(boxGeometry,glow(0xffb347));m.visible=false;m.userData={life:0,v:new THREE.Vector3()};this.scene.add(m);return m;});this.nextParticle=0;
