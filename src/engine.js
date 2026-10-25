@@ -33,7 +33,7 @@ export function createRace(track,mode='race',assist=true){
  return {track,mode,assist,cars,time:0,laps:mode==='trial'?3:5,done:false,events:[],slip:false};
 }
 export function step(r,input,dt){
- if(r.done)return;dt=clamp(dt,0,.05);r.time+=dt;r.events=[];r.slip=false;
+ if(r.done)return;dt=clamp(dt,0,.05);r.time+=dt;r.events=[];r.slip=false;for(const c of r.cars){c.contact=0;c.boosting=false;}
  for(let i=0;i<r.cars.length;i++){
   const c=r.cars[i];if(c.finished)continue;
   if(c.pit>0){c.pit-=dt;c.speed=0;if(c.pit<=0){c.tires=1;c.boost=1;r.events.push('Fresh tires. Go!');}continue;}
@@ -48,6 +48,7 @@ export function step(r,input,dt){
    if(r.assist)target=Math.min(target,safe+12);
    if(input.brake)target=95;
    boosting=input.boost&&c.boost>0&&!input.brake;
+   c.boosting=boosting;
    if(boosting){target+=95;c.boost=Math.max(0,c.boost-dt*.24);}else c.boost=Math.min(1,c.boost+dt*.065);
    const slip=r.cars.some((a,j)=>j>0&&a.s>c.s&&a.s-c.s<150&&Math.abs(a.lane-c.lane)<18);
    if(slip){target+=28;r.slip=true;}
@@ -76,6 +77,7 @@ export function step(r,input,dt){
   const a=r.cars[i],b=r.cars[j];if(a.finished||b.finished||a.pit>0||b.pit>0)continue;
   const ds=wrap(a.s-b.s,r.track.length),dl=a.lane-b.lane,ox=CAR_L-Math.abs(ds),oy=CAR_W-Math.abs(dl);
   if(ox<=0||oy<=0)continue;
+  const hit=Math.min(1,.05+Math.abs(a.speed-b.speed)/90);a.contact=Math.max(a.contact,hit);b.contact=Math.max(b.contact,hit);
   if(oy<ox){const sign=dl>0||(dl===0&&i===0)?1:-1;a.lane=clamp(a.lane+sign*oy/2,-78,78);b.lane=clamp(b.lane-sign*oy/2,-78,78);a.speed=Math.max(65,a.speed-60*dt);b.speed=Math.max(65,b.speed-60*dt);}
   else{const [front,back]=ds>=0?[a,b]:[b,a];back.s-=ox;back.speed=Math.min(back.speed,front.speed*.92);front.speed=Math.min(front.speed+8,380);}
  }

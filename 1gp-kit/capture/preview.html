@@ -32,5 +32,16 @@ window.capture=async(trackIndex,from,seconds,file)=>{
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:'video/webm'}));a.download=file;a.click();
  return {file,pos:ranking(r).findIndex(c=>c===r.cars[0])+1,time:formatTime(r.time)};
 };
+// Cover stills: a low three-quarter camera beside the player's car at a chosen moment of the same bot-driven race.
+window.still=async(trackIndex,at,{side=4.5,ahead=5,height=1.7,lookAhead=-1.5}={},file)=>{
+ const track=tracks[trackIndex],r=createRace(track,'race',true),dt=1/60;renderer.setTrack(track,trackIndex);
+ for(let n=0;n<Math.round(at*60);n++)step(r,botInput(r),dt);
+ for(let k=0;k<20;k++)renderer.render(r,dt,r.time);
+ const car=renderer.cars[0].position,h=-renderer.cars[0].rotation.y-Math.PI/2,fx=Math.cos(h),fz=Math.sin(h),cam=renderer.camera;
+ cam.fov=34;cam.updateProjectionMatrix();cam.position.set(car.x+fx*ahead-fz*side,height,car.z+fz*ahead+fx*side);cam.lookAt(car.x+fx*lookAhead,.7,car.z+fz*lookAhead);
+ renderer.renderer.render(renderer.scene,cam);
+ const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file;a.click();
+ return {file,pos:ranking(r).findIndex(c=>c===r.cars[0])+1};
+};
 window.ready=true;
 </script></body></html>
