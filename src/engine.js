@@ -5,6 +5,10 @@ export const TRACKS = [
 ];
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const mod=(a,b)=>((a%b)+b)%b;
+const wrap=(d,len)=>mod(d+len/2,len)-len/2;
+// Collision footprint in track units, matching the rendered car (about 1.75 × 2.9 scene units, ×20).
+export const CAR_L=56,CAR_W=32;
+function carAhead(r,c){let best=null;for(const o of r.cars){if(o===c||o.finished||o.pit>0)continue;const gap=wrap(o.s-c.s,r.track.length);if(gap>0&&gap<150&&Math.abs(o.lane-c.lane)<CAR_W+4&&(!best||gap<best.gap))best={car:o,gap};}return best;}
 export function createTrack(def){
  const points=[],n=def.points.length;
  for(let i=0;i<n;i++)for(let j=0;j<32;j++){
@@ -49,8 +53,11 @@ export function step(r,input,dt){
    if(slip){target+=28;r.slip=true;}
   }else{
    target=Math.min(320+i*3,safe*(.87+i*.015));
-   const desired=Math.sin(c.s/330+i*2)*25;
-   c.lane+=(desired-c.lane)*dt*1.5;
+   let desired=Math.sin(c.s/330+i*2)*25,rate=1.5;
+   // Pull out to overtake a car ahead in this lane; lift if there is no room yet.
+   const ahead=carAhead(r,c);
+   if(ahead){const {car:a,gap}=ahead;desired=clamp(a.lane+(a.lane>0?-1:1)*(CAR_W+6),-44,44);rate=2.6;if(gap<CAR_L+25&&Math.abs(a.lane-c.lane)<CAR_W)target=Math.min(target,a.speed);}
+   c.lane+=(desired-c.lane)*dt*rate;
   }
   if(Math.abs(c.lane)>48)target=Math.min(target,125);
   if(Math.abs(c.lane)>78){c.lane=clamp(c.lane,-78,78);c.speed*=.97;}
@@ -64,11 +71,13 @@ export function step(r,input,dt){
   if(c.s>=r.track.length*r.laps){c.finished=true;c.finishTime=r.time;if(i===0){r.done=true;r.events.push('Checkered flag');}}
   if(!c.finished&&c.pitQueued&&Math.floor(prev/r.track.length)!==Math.floor(c.s/r.track.length)){c.pitQueued=false;c.pit=3.5;if(i===0)r.events.push('Box, box · 3.5 seconds');}
  }
- // Side-by-side contact costs speed and separates cars without reversing progress.
- for(let i=0;i<r.cars.length;i++)for(let j=i+1;j<r.cars.length;j++){
-  const a=r.cars[i],b=r.cars[j];if(a.finished||b.finished||a.pit||b.pit)continue;
-  const gap=Math.abs(mod(a.s-b.s+r.track.length/2,r.track.length)-r.track.length/2);
-  if(gap<27&&Math.abs(a.lane-b.lane)<15){const sign=a.lane>=b.lane?1:-1;a.lane+=sign*30*dt;b.lane-=sign*30*dt;a.speed=Math.max(65,a.speed-100*dt);b.speed=Math.max(65,b.speed-100*dt);}
+ // Cars are solid: side-by-side contact pushes them apart, nose-to-tail contact stops the rear car driving through.
+ for(let pass=0;pass<2;pass++)for(let i=0;i<r.cars.length;i++)for(let j=i+1;j<r.cars.length;j++){
+  const a=r.cars[i],b=r.cars[j];if(a.finished||b.finished||a.pit>0||b.pit>0)continue;
+  const ds=wrap(a.s-b.s,r.track.length),dl=a.lane-b.lane,ox=CAR_L-Math.abs(ds),oy=CAR_W-Math.abs(dl);
+  if(ox<=0||oy<=0)continue;
+  if(oy<ox){const sign=dl>0||(dl===0&&i===0)?1:-1;a.lane=clamp(a.lane+sign*oy/2,-78,78);b.lane=clamp(b.lane-sign*oy/2,-78,78);a.speed=Math.max(65,a.speed-60*dt);b.speed=Math.max(65,b.speed-60*dt);}
+  else{const [front,back]=ds>=0?[a,b]:[b,a];back.s-=ox;back.speed=Math.min(back.speed,front.speed*.92);front.speed=Math.min(front.speed+8,380);}
  }
 }
 export function ranking(r){return [...r.cars].sort((a,b)=>a.finished&&b.finished?a.finishTime-b.finishTime:b.s-a.s);}

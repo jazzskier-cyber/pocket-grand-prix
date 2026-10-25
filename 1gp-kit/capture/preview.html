@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><title>Pocket Grand Prix · preview capture</title>
+<style>body{margin:0;background:#112d30}#game{width:1280px;height:720px;display:block}#out{display:none}</style></head>
+<body><canvas id="game"></canvas><canvas id="out" width="1920" height="1080"></canvas>
+<script type="module">
+// Capture-only page (served by the Vite dev server, never built): records real races driven by bot.js.
+import {TRACKS,createTrack,createRace,step,ranking,formatTime} from '../../src/engine.js';
+import {ToyRenderer} from '../../src/toy-renderer.js';
+import {botInput} from './bot.js';
+const tracks=TRACKS.map(createTrack),canvas=document.getElementById('game'),out=document.getElementById('out'),g=out.getContext('2d');
+const renderer=new ToyRenderer(canvas);renderer.resize();
+function hud(r,name){
+ const p=r.cars[0],pos=ranking(r).findIndex(c=>c===p)+1;
+ g.fillStyle='rgba(13,30,52,.72)';g.fillRect(36,36,330,128);g.fillRect(1920-36-420,36,420,92);g.fillRect(36,1080-36-104,560,104);
+ g.fillStyle='#9fb3c8';g.font='600 22px ui-monospace,Menlo,monospace';g.fillText('POSITION',62,72);g.fillText('LAP',236,72);g.fillText('ON THE CALENDAR',1920-36-394,72);
+ g.fillStyle='#fff';g.font='800 64px Helvetica,Arial,sans-serif';g.fillText(`P${pos}`,60,140);g.fillText(`${Math.min(p.lap,r.laps)}`,234,140);
+ g.font='800 40px Helvetica,Arial,sans-serif';g.fillText(name,1920-36-394,114);
+ g.font='800 60px Helvetica,Arial,sans-serif';g.fillText(String(Math.round(p.speed*.8)),62,1080-56);g.font='600 22px ui-monospace,Menlo,monospace';g.fillStyle='#9fb3c8';g.fillText('KM/H',190,1080-58);
+ g.fillText('BOOST',300,1080-100);g.fillStyle='#284766';g.fillRect(300,1080-86,260,14);g.fillStyle=p.boost>.12?'#ff653e':'#7a8aa0';g.fillRect(300,1080-86,260*p.boost,14);
+ if(r.slip){g.fillStyle='#fff';g.font='900 46px Helvetica,Arial,sans-serif';g.textAlign='center';g.fillText('SLIPSTREAM',960,150);g.textAlign='left';}
+}
+window.capture=async(trackIndex,from,seconds,file)=>{
+ const track=tracks[trackIndex],r=createRace(track,'race',true),dt=1/60;
+ renderer.setTrack(track,trackIndex);
+ for(let n=0;n<Math.round(from*60);n++)step(r,botInput(r),dt);
+ renderer.initial=true;for(let k=0;k<30;k++)renderer.render(r,dt,r.time);       // settle the chase camera
+ const rec=new MediaRecorder(out.captureStream(60),{mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:16000000}),chunks=[];
+ rec.ondataavailable=e=>chunks.push(e.data);rec.start();
+ const frames=Math.round(seconds*60);
+ await new Promise(done=>{let n=0;const tick=()=>{step(r,botInput(r),dt);renderer.render(r,dt,r.time);g.drawImage(canvas,0,0,1920,1080);hud(r,track.name);if(++n<frames)requestAnimationFrame(tick);else done();};requestAnimationFrame(tick);});
+ rec.stop();await new Promise(res=>rec.onstop=res);
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:'video/webm'}));a.download=file;a.click();
+ return {file,pos:ranking(r).findIndex(c=>c===r.cars[0])+1,time:formatTime(r.time)};
+};
+window.ready=true;
+</script></body></html>

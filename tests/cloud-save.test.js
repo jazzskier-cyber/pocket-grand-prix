@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {cleanRecords,exportRecords,summarize} from '../src/cloud-save.js';
+test('imported records drop malformed keys, times and ghosts',()=>{const r=cleanRecords({'0-trial-on':{time:61.2,ghost:[[1,2]]},'1-race-off':{time:90,ghost:'x'},'9-trial-on':{time:5},'2-trial-off':{time:-1},junk:1});assert.deepEqual(r,{'0-trial-on':{time:61.2,ghost:[[1,2]]},'1-race-off':{time:90,ghost:[]}});assert.deepEqual(cleanRecords(null),{});});
+test('snapshots stay under the cloud limit by dropping the longest ghosts first',()=>{const long=Array.from({length:6000},(_,i)=>[i*3,-12]),records={};for(const k of ['0','1','2'])for(const a of ['on','off'])records[`${k}-trial-${a}`]={time:300,ghost:long};records['0-trial-on'].ghost=[[1,1]];const out=exportRecords(records);assert.ok(JSON.stringify(out).length<=200000);assert.equal(Object.keys(out.records).length,6);assert.ok(Object.values(out.records).every(r=>r.time===300));assert.deepEqual(out.records['0-trial-on'].ghost,[[1,1]]);assert.equal(records['0-trial-off'].ghost.length,6000);});
+test('summary counts personal bests',()=>{assert.equal(summarize({records:{}}),'No personal bests yet');assert.equal(summarize({records:{'0-trial-on':{time:60,ghost:[]}}}),'1 personal best');});
